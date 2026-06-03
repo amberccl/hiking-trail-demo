@@ -369,4 +369,226 @@
               drive: "沿台14甲線至33.4K處", transit: "多為包車或自行開車", start: "石門山登山口", route: "登山口→石門山三角點", animal: "酒紅朱雀、金翼白眉", plant: "玉山箭竹、高山杜鵑", terrain: "高山箭竹草原"
             },
             { 
-              id
+              id: 13, name: "草嶺古道", img: "./trail-13.jpg", region: "北部", votes: 1540, type: "人文尋訪步道", diff: "低", target: "一般大眾", len: "8.5公里", desc: "淡蘭古道之一段，以秋季滿山芒花及「虎字碑」等古蹟聞名。",
+              city: "新北貢寮/宜蘭頭城", form: "單向", alt: "25~330公尺", drop: "305公尺", road: "石階、柏油路", time: "4小時", park: "東北角暨宜蘭海岸國家風景區", mount: "雪山山脈", season: "秋季(芒花季)", permitMt: "否", permitPark: "否", note: "每年11月舉辦芒花季活動",
+              drive: "導航至遠望坑親水公園", transit: "搭乘火車至福隆站或大里站", start: "福隆車站/遠望坑", route: "遠望坑→雄鎮蠻煙碑→虎字碑→大里天公廟", animal: "水牛、各式鳥類", plant: "芒草、風剪樹", terrain: "鞍部地形、海岸丘陵"
+            },
+            { 
+              id: 14, name: "瓦拉米步道", img: "./trail-14.jpg", region: "東部", votes: 1400, type: "人文尋訪步道", diff: "普通", target: "體力佳者", len: "13.6公里", desc: "八通關越嶺道東段的一部分，沿途吊橋與瀑布景觀豐富。",
+              city: "花蓮縣卓溪鄉", form: "往返", alt: "600~1060公尺", drop: "460公尺", road: "土徑、吊橋", time: "10小時", park: "玉山國家公園", mount: "中央山脈", season: "全年", permitMt: "是", permitPark: "否(僅至佳心前免申請)", note: "至佳心後若要繼續深入需申請入山",
+              drive: "導航至台30線終點南安登山口", transit: "無便利大眾運輸", start: "南安登山口", route: "南安登山口→山風瀑布→佳心→瓦拉米山屋", animal: "台灣黑熊、山羌、藍腹鷴", plant: "中低海拔闊葉林、蕨類", terrain: "溪谷、瀑布、吊橋"
+            }
+        ];
+
+        let currentTheme = '全部';
+        let currentRegion = '全部';
+        let loadedCount = 0;
+        const INITIAL_LOAD = 6;
+        const LOAD_MORE_COUNT = 4;
+
+        // 等待 HTML 載入後綁定功能
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 頁籤切換
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const sections = document.querySelectorAll('.page-section');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    sections.forEach(sec => sec.classList.remove('active'));
+                    button.classList.add('active');
+                    document.getElementById(button.getAttribute('data-target')).classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            });
+
+            // 初始化渲染步道
+            renderTrails();
+        });
+
+        // 渲染步道卡片函式 (結合雙重篩選)
+        function renderTrails() {
+            const container = document.getElementById('trail-container');
+            const btnLoadMore = document.getElementById('load-more-btn');
+            
+            // 根據主題與地區進行過濾
+            let filteredData = trailsDatabase.filter(trail => {
+                const matchTheme = (currentTheme === '全部' || trail.type === currentTheme);
+                const matchRegion = (currentRegion === '全部' || trail.region === currentRegion);
+                return matchTheme && matchRegion;
+            });
+
+            container.innerHTML = '';
+            const displayData = filteredData.slice(0, loadedCount || INITIAL_LOAD);
+            loadedCount = displayData.length;
+
+            if (displayData.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-size: 16px; padding: 20px;">目前此分類下沒有步道資料。</p>';
+            }
+
+            // 生成卡片 HTML (替換為實體 img 標籤)
+            displayData.forEach((trail) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${trail.img}" alt="${trail.name}" class="card-img">
+                    <div class="card-title">${trail.name}</div>
+                    <div class="card-text">
+                        <strong>目前得票數：</strong> <span style="color: #d9534f; font-weight:bold;">${trail.votes}</span> 票<br>
+                        <strong>類　　型：</strong> ${trail.type}<br>
+                        <strong>難　　度：</strong> ${trail.diff}<br>
+                        <strong>適合對象：</strong> ${trail.target}<br>
+                        <strong>長　　度：</strong> ${trail.len}<br>
+                        <strong>簡　　介：</strong> ${trail.desc}
+                    </div>
+                    <button class="btn" onclick="openModal(${trail.id})" style="width: 100%; margin-bottom: 8px; background: #ddd;">📋 查看步道資訊</button>
+                    <button class="btn" onclick="vote('${trail.name}')" style="width: 100%; font-weight: bold; background: #e3f2fd; border-color: #90caf9;">🗳️ 投給這條步道</button>
+                `;
+                container.appendChild(card);
+            });
+
+            if (filteredData.length > loadedCount) {
+                btnLoadMore.style.display = 'inline-block';
+            } else {
+                btnLoadMore.style.display = 'none';
+            }
+        }
+
+        // --- 全域互動功能函式 ---
+
+        // 主題篩選功能
+        window.setThemeFilter = function(filterType, clickedBtn) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            clickedBtn.classList.add('active');
+            currentTheme = filterType;
+            loadedCount = INITIAL_LOAD; 
+            renderTrails();
+        };
+
+        // 地區篩選功能
+        window.setRegionFilter = function(regionType, clickedBtn) {
+            document.querySelectorAll('.region-btn').forEach(btn => btn.classList.remove('active'));
+            clickedBtn.classList.add('active');
+            currentRegion = regionType;
+            loadedCount = INITIAL_LOAD; 
+            renderTrails();
+        };
+
+        // 載入更多步道
+        window.loadMoreTrails = function() {
+            loadedCount += LOAD_MORE_COUNT;
+            renderTrails();
+        };
+
+        // 登入功能與報名表單
+        let isLoggedIn = false;
+        let votesRemaining = 0;
+        
+        window.openRegisterModal = function() {
+            document.getElementById('register-modal').style.display = 'block';
+        };
+
+        window.submitRegistration = function() {
+            document.getElementById('register-modal').style.display = 'none';
+            isLoggedIn = true;
+            votesRemaining = 3;
+            document.getElementById('user-name').innerText = '王小明 (已登入)';
+            document.querySelector('.votes-left').innerText = votesRemaining + ' 票';
+            document.getElementById('login-btn').style.display = 'none';
+            alert('報名與登入成功！感謝您提供的資訊，您今日還有 3 次投票機會。');
+        };
+
+        // 投票功能
+        window.vote = function(trailName) {
+            if (!isLoggedIn) {
+                alert('⚠️ 請先於右上方點擊「社群登入」後再進行投票！');
+                return;
+            }
+            if (votesRemaining > 0) {
+                votesRemaining--;
+                document.querySelector('.votes-left').innerText = votesRemaining + ' 票';
+                alert(`✅ 投票成功！您已將票投給了「${trailName}」。\n今日剩餘票數：${votesRemaining}`);
+                const targetTrail = trailsDatabase.find(t => t.name === trailName);
+                if(targetTrail) { targetTrail.votes += 1; renderTrails(); }
+            } else {
+                alert('❌ 投票失敗：您今日的投票次數已用盡！');
+            }
+        };
+
+        // 步道彈窗 (Modal) 控制
+        window.openModal = function(trailId) {
+            const trail = trailsDatabase.find(t => t.id === trailId);
+            if(!trail) return;
+
+            // 替換彈窗圖片
+            document.getElementById('m-img').src = trail.img;
+            
+            document.getElementById('modal-title').innerText = trail.name;
+            document.getElementById('m-desc').innerText = trail.desc;
+            document.getElementById('m-city').innerText = trail.city;
+            document.getElementById('m-len').innerText = trail.len;
+            document.getElementById('m-type').innerText = trail.type;
+            document.getElementById('m-form').innerText = trail.form;
+            document.getElementById('m-alt').innerText = trail.alt;
+            document.getElementById('m-drop').innerText = trail.drop;
+            document.getElementById('m-road').innerText = trail.road;
+            document.getElementById('m-time').innerText = trail.time;
+            document.getElementById('m-diff').innerText = trail.diff;
+            document.getElementById('m-park').innerText = trail.park;
+            document.getElementById('m-mount').innerText = trail.mount;
+            document.getElementById('m-season').innerText = trail.season;
+            document.getElementById('m-permit-mt').innerText = trail.permitMt;
+            document.getElementById('m-permit-park').innerText = trail.permitPark;
+            document.getElementById('m-note').innerText = trail.note;
+
+            document.getElementById('m-drive').innerText = trail.drive;
+            document.getElementById('m-transit').innerText = trail.transit;
+            document.getElementById('m-start').innerText = trail.start;
+            document.getElementById('m-route-dest').value = trail.name;
+
+            document.getElementById('m-route').innerText = trail.route;
+            
+            document.getElementById('m-animal').innerText = trail.animal;
+            document.getElementById('m-plant').innerText = trail.plant;
+            document.getElementById('m-terrain').innerText = trail.terrain;
+
+            document.querySelector('.modal-tab-btn').click();
+            document.getElementById('trail-modal').style.display = 'block';
+        };
+
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        };
+
+        // 點擊彈窗外部區域關閉
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        };
+
+        window.switchModalTab = function(tabId, clickedBtn) {
+            document.querySelectorAll('.modal-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+            clickedBtn.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        };
+
+        // 社群圖框選擇
+        window.setFrame = function(clickedBox) {
+            document.querySelectorAll('.frame-box').forEach(box => box.classList.remove('active'));
+            clickedBox.classList.add('active');
+        };
+
+        // 社群分享
+        window.shareSocial = function(platform) {
+            if (!isLoggedIn) {
+                alert('⚠️ 請先登入社群帳號才能發布分享！');
+                return;
+            }
+            alert(`📸 合成照片已準備完畢，正在開啟 ${platform} 分享視窗...`);
+        };
+    </script>
+</body>
+</html>
