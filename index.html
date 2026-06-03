@@ -3,71 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>115年全國登山步道票選活動 - 前台網站線稿 (V6)</title>
+    <title>115年全國登山步道票選活動 - 前台網站線稿 (V10 精美地圖版)</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <style>
         /* 基礎線稿樣式設定 */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; color: #333; }
         header { background-color: #fff; border-bottom: 2px solid #333; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        
-        /* 修改 LOGO 樣式以適應圖片 */
         .logo { display: flex; align-items: center; }
         .logo img { height: 40px; border-radius: 4px; }
-        
         .nav-container { display: flex; align-items: center; gap: 15px; }
         nav button { background: none; border: 1px solid #333; padding: 8px 12px; cursor: pointer; font-size: 15px; transition: all 0.2s; border-radius: 8px;}
         nav button.active, nav button:hover { background-color: #333; color: #fff; }
-        
         .login-status { text-align: right; font-size: 13px; border-left: 1px solid #ccc; padding-left: 15px; }
         .votes-left { color: #d9534f; font-weight: bold; font-size: 15px; }
-
         main { max-width: 1000px; margin: 20px auto; background: #fff; border: 1px solid #ccc; min-height: 70vh; border-radius: 8px;}
         .page-section { display: none; padding: 30px; }
         .page-section.active { display: block; }
         h2 { border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-top: 0; }
-        
         .placeholder { border: 2px dashed #999; background-color: #eaeaea; display: flex; align-items: center; justify-content: center; color: #666; margin-bottom: 15px; border-radius: 8px;}
         .btn { background: #eee; border: 1px solid #333; padding: 8px 16px; text-align: center; cursor: pointer; box-sizing: border-box; border-radius: 8px;}
         .btn:hover { background: #ddd; }
-        
         .filter-btn, .region-btn { margin-bottom: 8px; }
         .filter-btn.active, .region-btn.active, .frame-box.active { background-color: #333; color: #fff; border-color: #333; }
         .frame-box { width: 100px; height: 100px; cursor: pointer; text-align: center; border-radius: 8px;}
 
-        /* 網格系統 (用於步道列表) */
+        /* ====== D3.js 互動地圖專屬樣式 ====== */
+        .map-container { display: flex; flex-direction: column; align-items: center; background: #eaeaea; border: 2px dashed #999; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        
+        #taiwan-map { width: 100%; max-width: 400px; margin: 0 auto; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15)); }
+        #taiwan-map svg { width: 100%; height: auto; display: block; background: transparent; }
+
+        .county { stroke: #ffffff; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; cursor: pointer; transition: opacity 0.2s ease, filter 0.2s ease, stroke-width 0.2s ease, stroke 0.2s ease; }
+        .county:hover { opacity: 0.85; filter: brightness(1.05); transform: scale(1.005); transform-origin: center; }
+        /* 被選中區域的強調樣式 */
+        .county.active { stroke: #333333; stroke-width: 2.5; filter: brightness(0.95); }
+
+        .map-outline { fill: none; stroke: #ffffff; stroke-width: 4; stroke-linejoin: round; pointer-events: none; }
+        /* ======================================= */
+
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
         .card { border: 1px solid #999; padding: 15px; display: flex; flex-direction: column; background: #fff; border-radius: 8px;}
         .card-img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 10px; border-bottom: 1px solid #ccc; }
         .card-title { font-weight: bold; margin-bottom: 10px; font-size: 18px; color: #2c3e50; }
         .card-text { font-size: 14px; color: #444; margin-bottom: 15px; flex-grow: 1; line-height: 1.6; }
         .card-text strong { color: #000; }
-        
-        /* 彈窗 (Modal) 樣式 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fff; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 800px; border-radius: 12px; max-height: 85vh; overflow-y: auto; }
         .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; margin-top: -10px;}
         .close-btn:hover { color: black; }
-        
-        /* 彈窗頁籤樣式 */
         .modal-tabs { display: flex; border-bottom: 1px solid #ccc; margin-bottom: 15px; background: #f4f4f4; border-radius: 8px 8px 0 0; overflow-x: auto; white-space: nowrap;}
         .modal-tab-btn { background: none; border: none; padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; font-size: 15px; color: #555;}
         .modal-tab-btn:hover { background: #e9e9e9; }
         .modal-tab-btn.active { background: #fff; border-bottom: 3px solid #5cb85c; font-weight: bold; color: #333; }
         .modal-tab-content { display: none; }
         .modal-tab-content.active { display: block; }
-        
-        /* 表單與表格樣式 */
         .info-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .info-table th, .info-table td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: top;}
         .info-table th { background-color: #f9f9f9; width: 120px; color: #666; font-weight: normal;}
-        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px;}
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-family: inherit;}
-
         footer { background: #333; color: #fff; text-align: center; padding: 20px; margin-top: 40px; font-size: 14px; line-height: 1.8;}
         .ad-box { border: 1px solid #fff; padding: 2px 6px; margin-right: 8px; border-radius: 4px; font-size: 12px; display: inline-block; vertical-align: middle; }
-
-        /* RWD 響應式設計：針對行動裝置 */
         @media (max-width: 768px) {
             header { flex-direction: column; padding: 15px; }
             .logo { margin-bottom: 15px; justify-content: center; width: 100%; }
@@ -113,15 +110,18 @@
         <section id="explore" class="page-section">
             <h2>候選步道介紹與探索</h2>
             
-            <div class="placeholder" style="height: 300px; flex-direction: column;">
-                <p style="font-size: 18px; font-weight: bold;">臺灣地理地圖 (互動底圖區)</p>
-                <p style="font-size: 14px;">請點選下方縣市按鈕進行區域篩選：</p>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 10px;">
-                    <button class="btn region-btn active" onclick="setRegionFilter('全部', this)">全區</button>
-                    <button class="btn region-btn" onclick="setRegionFilter('北部', this)">北部</button>
-                    <button class="btn region-btn" onclick="setRegionFilter('中部', this)">中部</button>
-                    <button class="btn region-btn" onclick="setRegionFilter('南部', this)">南部</button>
-                    <button class="btn region-btn" onclick="setRegionFilter('東部', this)">東部</button>
+            <div class="map-container">
+                <p style="font-size: 18px; font-weight: bold; margin-top:0;">臺灣地理地圖 (互動底圖區)</p>
+                <p style="font-size: 14px; color:#555;">請將游標移至地圖縣市並點擊，即可篩選該區步道：</p>
+                
+                <div id="taiwan-map"></div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding-top: 15px;">
+                    <button class="btn region-btn active" id="btn-region-all" onclick="setRegionFilter('全部')">全區</button>
+                    <button class="btn region-btn" id="btn-region-north" onclick="setRegionFilter('北部')">北部</button>
+                    <button class="btn region-btn" id="btn-region-central" onclick="setRegionFilter('中部')">中部</button>
+                    <button class="btn region-btn" id="btn-region-south" onclick="setRegionFilter('南部')">南部</button>
+                    <button class="btn region-btn" id="btn-region-east" onclick="setRegionFilter('東部')">東部</button>
                 </div>
             </div>
 
@@ -136,8 +136,7 @@
             </div>
 
             <h3 style="margin-top: 20px;">推薦步道一覽</h3>
-            <div class="grid" id="trail-container">
-                </div>
+            <div class="grid" id="trail-container"></div>
             
             <div style="text-align: center; margin-top: 30px;">
                 <button class="btn" id="load-more-btn" onclick="loadMoreTrails()" style="width: 250px; font-weight: bold; display: none;">看更多步道 🔽</button>
@@ -147,18 +146,15 @@
         <section id="social" class="page-section">
             <h2>社群互動任務：分享你的步道足跡</h2>
             <p>完成社群分享，即可獲得專屬活動抽獎資格！</p>
-            
             <div style="border: 2px dashed #999; padding: 25px; background: #fafafa; margin-top: 20px; border-radius: 8px;">
                 <h3 style="margin-top: 0;">Step 1: 上傳照片</h3>
                 <input type="file" accept="image/*" style="margin-bottom: 25px;">
-                
                 <h3>Step 2: 選擇專屬圖框 (單選)</h3>
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; overflow-x: auto;">
                     <div class="placeholder frame-box active" onclick="setFrame(this)">圖框 A<br>(親子風)</div>
                     <div class="placeholder frame-box" onclick="setFrame(this)">圖框 B<br>(勇腳風)</div>
                     <div class="placeholder frame-box" onclick="setFrame(this)">圖框 C<br>(文青風)</div>
                 </div>
-
                 <h3>Step 3: 預覽與發布</h3>
                 <div class="placeholder" style="width: 100%; max-width: 250px; height: 250px; margin-bottom: 20px;">照片與圖框合成預覽區</div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -171,58 +167,23 @@
 
         <section id="media" class="page-section">
             <h2>多媒體與資源連結</h2>
-            <div class="placeholder" style="height: 350px;">
-                宣傳影片播放器佔位區 (90秒完整版 / 30秒精華版)
-            </div>
+            <div class="placeholder" style="height: 350px;">宣傳影片播放器佔位區</div>
             <h3>活動集錦</h3>
             <div class="grid">
                 <div class="placeholder" style="height: 150px;">活動照片 1</div>
                 <div class="placeholder" style="height: 150px;">活動照片 2</div>
                 <div class="placeholder" style="height: 150px;">活動照片 3</div>
             </div>
-            <h3 style="margin-top:40px;">合作單位連結</h3>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn">地方政府觀光局</button>
-                <button class="btn">登山相關協會</button>
-                <button class="btn">戶外用品品牌</button>
-            </div>
         </section>
         
         <div id="register-modal" class="modal">
             <div class="modal-content" style="max-width: 500px;">
                 <span class="close-btn" onclick="closeModal('register-modal')">&times;</span>
-                <h2 style="border:none; margin-bottom: 15px; color: #2c3e50;">首次登入 - 活動報名</h2>
-                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">為進行未來步道優化與政策規劃之數據分析，請填寫以下報名資訊（僅供主辦單位參考）：</p>
-                
-                <div class="form-group">
-                    <label>年齡</label>
-                    <select>
-                        <option>18歲以下</option><option>19-30歲</option><option>31-45歲</option><option>46-60歲</option><option>60歲以上</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>性別</label>
-                    <select><option>男</option><option>女</option><option>其他/不願透露</option></select>
-                </div>
-                <div class="form-group">
-                    <label>職業</label>
-                    <input type="text" placeholder="例：服務業、資訊業、學生...">
-                </div>
-                <div class="form-group">
-                    <label>居住地</label>
-                    <input type="text" placeholder="例：台北市、台中市...">
-                </div>
-                <div class="form-group">
-                    <label>登山習慣</label>
-                    <select>
-                        <option>幾乎不爬山</option><option>偶爾健行 (1年數次)</option><option>每月至少1次</option><option>每週都有爬山習慣</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>相關建議 (選填)</label>
-                    <textarea rows="3" placeholder="您對台灣登山步道有什麼建議嗎？"></textarea>
-                </div>
-                <button class="btn" style="width: 100%; background: #5cb85c; color: white; border: none; font-size: 16px; padding: 12px; margin-top: 10px;" onclick="submitRegistration()">送出並完成報名</button>
+                <h2 style="border:none; margin-bottom: 15px;">首次登入 - 活動報名</h2>
+                <div class="form-group"><label>年齡</label><select><option>18歲以下</option><option>19-30歲</option><option>31-45歲</option><option>46-60歲</option><option>60歲以上</option></select></div>
+                <div class="form-group"><label>性別</label><select><option>男</option><option>女</option><option>其他</option></select></div>
+                <div class="form-group"><label>居住地</label><input type="text" placeholder="例：台北市"></div>
+                <button class="btn" style="width: 100%; background: #5cb85c; color: white;" onclick="submitRegistration()">送出並完成報名</button>
             </div>
         </div>
 
@@ -230,71 +191,17 @@
             <div class="modal-content">
                 <span class="close-btn" onclick="closeModal('trail-modal')">&times;</span>
                 <h2 id="modal-title" style="border:none; margin-bottom: 5px;">步道名稱</h2>
-                
                 <div class="modal-tabs">
                     <button class="modal-tab-btn active" onclick="switchModalTab('tab-basic', this)">📄 基本資料</button>
                     <button class="modal-tab-btn" onclick="switchModalTab('tab-traffic', this)">🚌 交通方式</button>
-                    <button class="modal-tab-btn" onclick="switchModalTab('tab-map', this)">🗺️ 路線地圖</button>
                     <button class="modal-tab-btn" onclick="switchModalTab('tab-eco', this)">🌿 人文生態</button>
                 </div>
-                
                 <div id="tab-basic" class="modal-tab-content active">
-                    <img id="m-img" src="" alt="步道主圖" style="width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;">
-                    <table class="info-table">
-                        <tr><th>步道簡介</th><td id="m-desc"></td></tr>
-                        <tr><th>所在縣市</th><td id="m-city"></td></tr>
-                        <tr><th>里程 (長度)</th><td id="m-len"></td></tr>
-                        <tr><th>步道類型</th><td id="m-type"></td></tr>
-                        <tr><th>步道型態</th><td id="m-form"></td></tr>
-                        <tr><th>海拔高度</th><td id="m-alt"></td></tr>
-                        <tr><th>高度落差</th><td id="m-drop"></td></tr>
-                        <tr><th>路面狀況</th><td id="m-road"></td></tr>
-                        <tr><th>所需時間</th><td id="m-time"></td></tr>
-                        <tr><th>難易度</th><td id="m-diff"></td></tr>
-                        <tr><th>所屬園區</th><td id="m-park"></td></tr>
-                        <tr><th>山脈</th><td id="m-mount"></td></tr>
-                        <tr><th>最適季節</th><td id="m-season"></td></tr>
-                        <tr><th>申請入山</th><td id="m-permit-mt"></td></tr>
-                        <tr><th>申請入園</th><td id="m-permit-park"></td></tr>
-                        <tr><th>備註</th><td id="m-note"></td></tr>
-                    </table>
+                    <img id="m-img" src="" style="width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;">
+                    <table class="info-table"><tbody id="m-basic-table"></tbody></table>
                 </div>
-                
-                <div id="tab-traffic" class="modal-tab-content">
-                    <table class="info-table">
-                        <tr><th>開車</th><td id="m-drive"></td></tr>
-                        <tr><th>大眾運輸</th><td id="m-transit"></td></tr>
-                        <tr><th>出發點</th><td id="m-start"></td></tr>
-                        <tr>
-                            <th>路線規劃</th>
-                            <td>
-                                <input type="text" placeholder="出發地" style="padding: 5px; width: 40%; max-width: 150px; margin-bottom: 5px;"> ➔ 
-                                <input type="text" id="m-route-dest" readonly style="padding: 5px; background:#eee; width: 40%; max-width: 150px; margin-bottom: 5px;">
-                                <button class="btn" style="padding: 5px 15px; background: #5cb85c; color: white; border: none;">查詢</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>交通查詢</th>
-                            <td><a href="#" style="color: #5cb85c; margin-right: 10px;">大台北公車</a> <a href="#" style="color: #5cb85c; margin-right: 10px;">台北捷運</a> <a href="#" style="color: #5cb85c;">台鐵時刻表</a></td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div id="tab-map" class="modal-tab-content">
-                    <table class="info-table">
-                        <tr><th>路線</th><td id="m-route"></td></tr>
-                        <tr><th>地圖</th><td><div class="placeholder" style="height: 250px;">Google Map 嵌入區</div></td></tr>
-                        <tr><th>路線圖</th><td><div class="placeholder" style="height: 250px;">路線高程圖/示意圖</div></td></tr>
-                    </table>
-                </div>
-
-                <div id="tab-eco" class="modal-tab-content">
-                    <table class="info-table">
-                        <tr><th>動物</th><td id="m-animal"></td></tr>
-                        <tr><th>植物</th><td id="m-plant"></td></tr>
-                        <tr><th>地形地貌</th><td id="m-terrain"></td></tr>
-                    </table>
-                </div>
+                <div id="tab-traffic" class="modal-tab-content"><table class="info-table"><tbody id="m-traffic-table"></tbody></table></div>
+                <div id="tab-eco" class="modal-tab-content"><table class="info-table"><tbody id="m-eco-table"></tbody></table></div>
             </div>
         </div>
 
@@ -302,82 +209,98 @@
 
     <footer>
         <p><span class="ad-box">廣告</span>主辦單位：運動部全民運動署 | 執行單位：永悅健康股份有限公司</p>
-        <p style="font-size: 12px; color: #999;">此為 V6 線稿：嵌入真實圖檔(logo及步道照)、新增預算法廣告方框、連動區域篩選功能。</p>
+        <p style="font-size: 12px; color: #999;">此為 V10 線稿：導入 D3.js 與政府開放圖資 (GeoJSON) 繪製真實精美地圖並綁定連動篩選。</p>
     </footer>
 
     <script>
-        // --- 步道資料庫 (強制使用 ./ 相對路徑讀取圖片) ---
+        // ====== D3.js 繪製地圖與邏輯 ======
+        const width = 560;
+        const height = 720;
+        const colors = {
+            north: "#5f8f83",   // 北部
+            central: "#83b86b", // 中部
+            south: "#9ec7ad",   // 南部
+            east: "#69a99f",    // 東部
+            island: "#7fae73"   // 離島
+        };
+
+        const regionMap = {
+            "臺北市": "north", "台北市": "north", "新北市": "north", "基隆市": "north", "桃園市": "north", "新竹市": "north", "新竹縣": "north", "宜蘭縣": "north",
+            "苗栗縣": "central", "臺中市": "central", "台中市": "central", "彰化縣": "central", "南投縣": "central", "雲林縣": "central",
+            "嘉義市": "south", "嘉義縣": "south", "臺南市": "south", "台南市": "south", "高雄市": "south", "屏東縣": "south",
+            "花蓮縣": "east", "臺東縣": "east", "台東縣": "east",
+            "澎湖縣": "island", "金門縣": "island", "連江縣": "island"
+        };
+
+        const labelMap = {
+            north: "北部", central: "中部", south: "南部", east: "東部", island: "離島"
+        };
+
+        const svg = d3.select("#taiwan-map")
+            .append("svg")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("role", "img")
+            .attr("aria-label", "台灣北中南東四區步道路線示意地圖");
+
+        const g = svg.append("g");
+        const geojsonUrl = "https://cdn.jsdelivr.net/gh/g0v/twgeojson@master/json/twCounty2010.geo.json";
+
+        d3.json(geojsonUrl).then((geoData) => {
+            const projection = d3.geoMercator().fitSize([width * 0.86, height * 0.9], geoData);
+            const path = d3.geoPath().projection(projection);
+
+            g.attr("transform", "translate(40, 20)");
+
+            g.selectAll("path.county")
+                .data(geoData.features)
+                .join("path")
+                // 綁定類別以便後續控制高亮
+                .attr("class", (d) => {
+                    const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county;
+                    const region = regionMap[countyName] || "island";
+                    return `county region-${region}`;
+                })
+                .attr("d", path)
+                .attr("fill", (d) => {
+                    const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county;
+                    const region = regionMap[countyName] || "island";
+                    return colors[region];
+                })
+                .on("click", function(event, d) {
+                    // 點擊地圖區塊觸發篩選
+                    const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county;
+                    const regionId = regionMap[countyName] || "island";
+                    const regionLabel = labelMap[regionId];
+                    if(regionLabel !== "離島") {
+                        setRegionFilter(regionLabel);
+                    } else {
+                        setRegionFilter('全部');
+                    }
+                })
+                .append("title")
+                .text((d) => {
+                    const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county || "縣市";
+                    const region = regionMap[countyName] || "island";
+                    return `${countyName}｜${labelMap[region]}`;
+                });
+        });
+
+        // ====== 步道資料與其餘邏輯 ======
         const trailsDatabase = [
-            { 
-              id: 1, name: "信賢步道", img: "./trail-1.jpg", region: "北部", votes: 3200, type: "親子探索步道", diff: "極低", target: "適合全齡", len: "1.5公里", desc: "位於烏來，沿途瀑布眾多且平緩好走的森林步道。",
-              city: "新北市烏來區", form: "雙向進出", alt: "208~250公尺", drop: "42公尺", road: "碎石路、柏油路", time: "40分鐘", park: "-", mount: "雪山山脈", season: "全年", permitMt: "否", permitPark: "否", note: "沿途有多個小瀑布",
-              drive: "導航至信賢吊橋", transit: "搭乘新店客運至烏來站轉乘台車或步行", start: "信賢吊橋", route: "信賢吊橋→信賢步道→種籽親子實小", animal: "鳥類、蛙類", plant: "低海拔闊葉林、蕨類", terrain: "溪流、瀑布"
-            },
-            { 
-              id: 2, name: "合歡主峰步道", img: "./trail-2.jpg", region: "中部", votes: 2980, type: "挑戰健行步道", diff: "普通", target: "體力佳者", len: "1.8公里(單程)", desc: "百岳入門首選，擁有360度環景視野與絕美日出日落。",
-              city: "南投縣/花蓮縣", form: "往返", alt: "3186~3416公尺", drop: "230公尺", road: "水泥鋪面", time: "2小時", park: "太魯閣國家公園", mount: "中央山脈", season: "全年", permitMt: "否", permitPark: "否", note: "平緩好走的水泥路面",
-              drive: "沿台14甲線至29.5K處登山口", transit: "無便利大眾運輸", start: "合歡主峰登山口", route: "登山口→合歡主峰三角點(折返)", animal: "金翼白眉、酒紅朱雀", plant: "玉山箭竹、高山杜鵑", terrain: "高山箭竹草原"
-            },
-            { 
-              id: 3, name: "阿里山國家森林遊樂區巨木群步道", img: "./trail-3.jpg", region: "南部", votes: 2850, type: "生態觀察步道", diff: "低", target: "一般大眾", len: "1.1公里", desc: "漫步於三十多棵紅檜巨木與神木遺跡之間，全台神木密度最高的步道。",
-              city: "嘉義縣阿里山鄉", form: "雙向進出", alt: "2138~2200公尺", drop: "62公尺", road: "木棧道", time: "1小時50分鐘", park: "阿里山國家森林遊樂區", mount: "阿里山山脈", season: "全年", permitMt: "否", permitPark: "否", note: "輕鬆好走可見神木火車站",
-              drive: "導航至阿里山國家森林遊樂區", transit: "搭乘台灣好行阿里山線或客運", start: "千歲檜/吊橋", route: "千歲檜→香林神木→神木車站→神怡橋→巨木觀景台→吊橋", animal: "帝雉、鳥類", plant: "紅檜巨木、柳杉", terrain: "高海拔森林"
-            },
-            { 
-              id: 4, name: "五峰旗瀑布步道", img: "./trail-4.jpg", region: "東部", votes: 2600, type: "自然親山步道", diff: "極低", target: "適合全齡", len: "1公里(往返)", desc: "氣勢磅礡的三層瀑布與林蔭清幽的親水步道。",
-              city: "宜蘭縣礁溪鄉", form: "往返", alt: "150~250公尺", drop: "100公尺", road: "石階、碎石路", time: "40分鐘", park: "-", mount: "雪山山脈", season: "全年", permitMt: "否", permitPark: "否", note: "上層瀑布視路況開放",
-              drive: "導航至五峰旗風景區停車場", transit: "搭乘台灣好行礁溪線", start: "五峰旗風景區停車場收費亭", route: "停車場→步道入口→第三層瀑布→第二層瀑布→停車場", animal: "鳥類、昆蟲", plant: "低海拔闊葉林", terrain: "瀑布、溪谷"
-            },
-            { 
-              id: 5, name: "特富野古道", img: "./trail-5.jpg", region: "南部", votes: 2450, type: "人文尋訪步道", diff: "低", target: "一般大眾", len: "6.32公里", desc: "早期為鄒族人打獵路徑，後改建為水山線鐵道。",
-              city: "嘉義縣阿里山鄉", form: "雙向進出", alt: "2270~2305公尺", drop: "35公尺", road: "碎石路、木棧道、土徑", time: "4小時", park: "阿里山國家森林遊樂區", mount: "阿里山山脈", season: "全年", permitMt: "否", permitPark: "否", note: "擁有極佳的舊鐵道景觀",
-              drive: "導航至自忠登山口", transit: "搭乘台灣好行阿里山線至自忠站", start: "自忠登山口或特富野登山口", route: "自忠→特富野", animal: "帝雉、藍腹鷴", plant: "柳杉人工林、紅檜", terrain: "中高海拔山區"
-            },
-            { 
-              id: 6, name: "二子坪步道", img: "./trail-6.jpg", region: "北部", votes: 2300, type: "親子探索步道", diff: "極低", target: "適合全齡", len: "1.8公里", desc: "陽明山國家公園內最平易近人的無障礙步道。",
-              city: "新北市三芝區", form: "往返", alt: "800~840公尺", drop: "40公尺", road: "碎石路、柏油路、木棧道", time: "1小時", park: "陽明山國家公園", mount: "大屯山系", season: "全年", permitMt: "否", permitPark: "否", note: "素有蝴蝶走廊之稱",
-              drive: "可導航至二子坪遊客服務站", transit: "搭乘108遊園公車至二子坪站", start: "二子坪遊客服務站", route: "二子坪遊客中心→二子坪休憩區", animal: "各式蝶類、赤腹松鼠", plant: "多樣闊葉林、水生植物", terrain: "火山凹地"
-            },
-            { 
-              id: 7, name: "大坑9號步道", img: "./trail-7.jpg", region: "中部", votes: 2100, type: "親子探索步道", diff: "極低", target: "適合全齡", len: "1.5公里", desc: "大坑風景區內難度較低、視野良好的休閒步道。",
-              city: "臺中市北屯區", form: "往返", alt: "170~320公尺", drop: "150公尺", road: "木棧道、柏油路", time: "1小時", park: "大坑風景區", mount: "-", season: "全年", permitMt: "否", permitPark: "否", note: "常與10號步道搭配O型環走",
-              drive: "導航至經補庫停車場", transit: "搭乘臺中市公車至大坑9號步道站", start: "經補庫停車場", route: "大坑9號步道入口→觀音亭", animal: "台灣獼猴、鳥類", plant: "相思樹林、果園", terrain: "丘陵"
-            },
-            { 
-              id: 8, name: "象山親山步道", img: "./trail-8.jpg", region: "北部", votes: 2050, type: "親子探索步道", diff: "極低", target: "適合全齡", len: "1.71公里", desc: "位於台北市信義區的象山，擁有極佳視野，為觀賞台北101與夜景勝地。",
-              city: "臺北市信義區", form: "環狀", alt: "25~183公尺", drop: "158公尺", road: "石板路、石階", time: "1小時40分鐘", park: "-", mount: "南港山系", season: "全年", permitMt: "否", permitPark: "否", note: "可通往獅山、豹山、虎山等地",
-              drive: "信義路五段150巷22弄", transit: "搭捷運淡水信義線至象山站", start: "靈雲宮", route: "靈雲宮→六巨石→象山頂→一線天→靈雲宮", animal: "五色鳥、斯文豪氏大蝸牛", plant: "青剛櫟、大頭茶", terrain: "一線天、六巨石"
-            },
-            { 
-              id: 9, name: "無耳茶壺山步道", img: "./trail-9.jpg", region: "北部", votes: 1980, type: "挑戰健行步道", diff: "普通", target: "體力佳者", len: "4.5公里", desc: "形狀如同一隻沒有手把的茶壺而得名，可俯瞰陰陽海。",
-              city: "新北市瑞芳區", form: "往返", alt: "280~600公尺", drop: "320公尺", road: "石階、土徑、柏油路", time: "2小時", park: "-", mount: "基隆火山群", season: "秋季", permitMt: "否", permitPark: "否", note: "芒草季為熱門賞芒景點",
-              drive: "導航至勸濟堂", transit: "搭乘基隆客運至勸濟堂站", start: "勸濟堂", route: "勸濟堂→無耳茶壺山頂", animal: "常見鳥類、昆蟲", plant: "芒草、蕨類", terrain: "沉積岩與火成岩交界"
-            },
-            { 
-              id: 10, name: "硬漢嶺步道", img: "./trail-10.jpg", region: "北部", votes: 1850, type: "挑戰健行步道", diff: "普通", target: "體力佳者", len: "1.56公里", desc: "觀音山最高峰，山頂視野極佳，可俯瞰淡水河口與大台北盆地。",
-              city: "新北市五股區", form: "往返", alt: "300~616公尺", drop: "316公尺", road: "石階", time: "1小時30分鐘", park: "北海岸及觀音山國家風景區", mount: "觀音山系", season: "全年", permitMt: "否", permitPark: "否", note: "沿途階梯較多，考驗腿力",
-              drive: "導航至觀音山遊客中心", transit: "搭乘橘20公車至凌雲禪寺站", start: "凌雲禪寺登山口", route: "凌雲禪寺→硬漢嶺", animal: "猛禽(老鷹)、獼猴", plant: "闊葉林、竹林", terrain: "火山地形"
-            },
-            { 
-              id: 11, name: "林美石磐步道", img: "./trail-11.jpg", region: "東部", votes: 1720, type: "生態觀察步道", diff: "低", target: "一般大眾", len: "1.7公里", desc: "有「宜蘭的小太魯閣」美稱，步道平緩且充滿溪流瀑布。",
-              city: "宜蘭縣礁溪鄉", form: "環狀", alt: "200~300公尺", drop: "100公尺", road: "碎石路、木棧道", time: "1小時", park: "-", mount: "雪山山脈", season: "全年", permitMt: "否", permitPark: "否", note: "步道為右去左回的環狀",
-              drive: "導航至林美石磐步道入口", transit: "搭乘台灣好行礁溪線", start: "步道入口", route: "步道入口→石磐瀑布→步道出口", animal: "溪流魚蝦、鳥類", plant: "亞熱帶溪谷植物", terrain: "峽谷、瀑布"
-            },
-            { 
-              id: 12, name: "合歡石門山步道", img: "./trail-12.jpg", region: "東部", votes: 1680, type: "自然親山步道", diff: "極低", target: "適合全齡", len: "0.78公里", desc: "台灣百岳中最容易親近的一座，被稱為「八小巒」之一。",
-              city: "花蓮縣秀林鄉", form: "往返", alt: "3150~3237公尺", drop: "87公尺", road: "土石路、木棧道", time: "1小時", park: "太魯閣國家公園", mount: "中央山脈", season: "全年", permitMt: "否", permitPark: "否", note: "屬百岳入門款",
-              drive: "沿台14甲線至33.4K處", transit: "多為包車或自行開車", start: "石門山登山口", route: "登山口→石門山三角點", animal: "酒紅朱雀、金翼白眉", plant: "玉山箭竹、高山杜鵑", terrain: "高山箭竹草原"
-            },
-            { 
-              id: 13, name: "草嶺古道", img: "./trail-13.jpg", region: "北部", votes: 1540, type: "人文尋訪步道", diff: "低", target: "一般大眾", len: "8.5公里", desc: "淡蘭古道之一段，以秋季滿山芒花及「虎字碑」等古蹟聞名。",
-              city: "新北貢寮/宜蘭頭城", form: "單向", alt: "25~330公尺", drop: "305公尺", road: "石階、柏油路", time: "4小時", park: "東北角暨宜蘭海岸國家風景區", mount: "雪山山脈", season: "秋季(芒花季)", permitMt: "否", permitPark: "否", note: "每年11月舉辦芒花季活動",
-              drive: "導航至遠望坑親水公園", transit: "搭乘火車至福隆站或大里站", start: "福隆車站/遠望坑", route: "遠望坑→雄鎮蠻煙碑→虎字碑→大里天公廟", animal: "水牛、各式鳥類", plant: "芒草、風剪樹", terrain: "鞍部地形、海岸丘陵"
-            },
-            { 
-              id: 14, name: "瓦拉米步道", img: "./trail-14.jpg", region: "東部", votes: 1400, type: "人文尋訪步道", diff: "普通", target: "體力佳者", len: "13.6公里", desc: "八通關越嶺道東段的一部分，沿途吊橋與瀑布景觀豐富。",
-              city: "花蓮縣卓溪鄉", form: "往返", alt: "600~1060公尺", drop: "460公尺", road: "土徑、吊橋", time: "10小時", park: "玉山國家公園", mount: "中央山脈", season: "全年", permitMt: "是", permitPark: "否(僅至佳心前免申請)", note: "至佳心後若要繼續深入需申請入山",
-              drive: "導航至台30線終點南安登山口", transit: "無便利大眾運輸", start: "南安登山口", route: "南安登山口→山風瀑布→佳心→瓦拉米山屋", animal: "台灣黑熊、山羌、藍腹鷴", plant: "中低海拔闊葉林、蕨類", terrain: "溪谷、瀑布、吊橋"
-            }
+            { id: 1, name: "信賢步道", img: "./trail-1.jpg", region: "北部", votes: 3200, type: "親子探索步道", diff: "極低", desc: "位於烏來，沿途瀑布眾多且平緩好走的森林步道。", city: "新北市烏來區", len: "1.5公里", drive: "導航至信賢吊橋", transit: "搭乘新店客運至烏來站轉乘台車或步行", animal: "鳥類、蛙類", plant: "低海拔闊葉林、蕨類" },
+            { id: 2, name: "合歡主峰步道", img: "./trail-2.jpg", region: "中部", votes: 2980, type: "挑戰健行步道", diff: "普通", desc: "百岳入門首選，擁有360度環景視野與絕美日出日落。", city: "南投縣/花蓮縣", len: "1.8公里(單程)", drive: "沿台14甲線至29.5K處登山口", transit: "無便利大眾運輸", animal: "金翼白眉、酒紅朱雀", plant: "玉山箭竹、高山杜鵑" },
+            { id: 3, name: "阿里山國家森林遊樂區巨木群步道", img: "./trail-3.jpg", region: "南部", votes: 2850, type: "生態觀察步道", diff: "低", desc: "漫步於三十多棵紅檜巨木與神木遺跡之間，全台神木密度最高的步道。", city: "嘉義縣阿里山鄉", len: "1.1公里", drive: "導航至阿里山國家森林遊樂區", transit: "搭乘台灣好行阿里山線或客運", animal: "帝雉、鳥類", plant: "紅檜巨木、柳杉" },
+            { id: 4, name: "五峰旗瀑布步道", img: "./trail-4.jpg", region: "東部", votes: 2600, type: "自然親山步道", diff: "極低", desc: "氣勢磅礡的三層瀑布與林蔭清幽的親水步道。", city: "宜蘭縣礁溪鄉", len: "1公里(往返)", drive: "導航至五峰旗風景區停車場", transit: "搭乘台灣好行礁溪線", animal: "鳥類、昆蟲", plant: "低海拔闊葉林" },
+            { id: 5, name: "特富野古道", img: "./trail-5.jpg", region: "南部", votes: 2450, type: "人文尋訪步道", diff: "低", desc: "早期為鄒族人打獵路徑，後改建為水山線鐵道。", city: "嘉義縣阿里山鄉", len: "6.32公里", drive: "導航至自忠登山口", transit: "搭乘台灣好行阿里山線至自忠站", animal: "帝雉、藍腹鷴", plant: "柳杉人工林、紅檜" },
+            { id: 6, name: "二子坪步道", img: "./trail-6.jpg", region: "北部", votes: 2300, type: "親子探索步道", diff: "極低", desc: "陽明山國家公園內最平易近人的無障礙步道。", city: "新北市三芝區", len: "1.8公里", drive: "可導航至二子坪遊客服務站", transit: "搭乘108遊園公車至二子坪站", animal: "各式蝶類、赤腹松鼠", plant: "多樣闊葉林、水生植物" },
+            { id: 7, name: "大坑9號步道", img: "./trail-7.jpg", region: "中部", votes: 2100, type: "親子探索步道", diff: "極低", desc: "大坑風景區內難度較低、視野良好的休閒步道。", city: "臺中市北屯區", len: "1.5公里", drive: "導航至經補庫停車場", transit: "搭乘臺中市公車至大坑9號步道站", animal: "台灣獼猴、鳥類", plant: "相思樹林、果園" },
+            { id: 8, name: "象山親山步道", img: "./trail-8.jpg", region: "北部", votes: 2050, type: "親子探索步道", diff: "極低", desc: "位於台北市信義區的象山，擁有極佳視野，為觀賞台北101與夜景勝地。", city: "臺北市信義區", len: "1.71公里", drive: "信義路五段150巷22弄", transit: "搭捷運淡水信義線至象山站", animal: "五色鳥、斯文豪氏大蝸牛", plant: "青剛櫟、大頭茶" },
+            { id: 9, name: "無耳茶壺山步道", img: "./trail-9.jpg", region: "北部", votes: 1980, type: "挑戰健行步道", diff: "普通", desc: "形狀如同一隻沒有手把的茶壺而得名，可俯瞰陰陽海。", city: "新北市瑞芳區", len: "4.5公里", drive: "導航至勸濟堂", transit: "搭乘基隆客運至勸濟堂站", animal: "常見鳥類、昆蟲", plant: "芒草、蕨類" },
+            { id: 10, name: "硬漢嶺步道", img: "./trail-10.jpg", region: "北部", votes: 1850, type: "挑戰健行步道", diff: "普通", desc: "觀音山最高峰，山頂視野極佳，可俯瞰淡水河口與大台北盆地。", city: "新北市五股區", len: "1.56公里", drive: "導航至觀音山遊客中心", transit: "搭乘橘20公車至凌雲禪寺站", animal: "猛禽(老鷹)、獼猴", plant: "闊葉林、竹林" },
+            { id: 11, name: "林美石磐步道", img: "./trail-11.jpg", region: "東部", votes: 1720, type: "生態觀察步道", diff: "低", desc: "有「宜蘭的小太魯閣」美稱，步道平緩且充滿溪流瀑布。", city: "宜蘭縣礁溪鄉", len: "1.7公里", drive: "導航至林美石磐步道入口", transit: "搭乘台灣好行礁溪線", animal: "溪流魚蝦、鳥類", plant: "亞熱帶溪谷植物" },
+            { id: 12, name: "合歡石門山步道", img: "./trail-12.jpg", region: "東部", votes: 1680, type: "自然親山步道", diff: "極低", desc: "台灣百岳中最容易親近的一座，被稱為「八小巒」之一。", city: "花蓮縣秀林鄉", len: "0.78公里", drive: "沿台14甲線至33.4K處", transit: "多為包車或自行開車", animal: "酒紅朱雀、金翼白眉", plant: "玉山箭竹、高山杜鵑" },
+            { id: 13, name: "草嶺古道", img: "./trail-13.jpg", region: "北部", votes: 1540, type: "人文尋訪步道", diff: "低", desc: "淡蘭古道之一段，以秋季滿山芒花及「虎字碑」等古蹟聞名。", city: "新北貢寮/宜蘭頭城", len: "8.5公里", drive: "導航至遠望坑親水公園", transit: "搭乘火車至福隆站或大里站", animal: "水牛、各式鳥類", plant: "芒草、風剪樹" },
+            { id: 14, name: "瓦拉米步道", img: "./trail-14.jpg", region: "東部", votes: 1400, type: "人文尋訪步道", diff: "普通", desc: "八通關越嶺道東段的一部分，沿途吊橋與瀑布景觀豐富。", city: "花蓮縣卓溪鄉", len: "13.6公里", drive: "導航至台30線終點南安登山口", transit: "無便利大眾運輸", animal: "台灣黑熊、山羌、藍腹鷴", plant: "中低海拔闊葉林、蕨類" }
         ];
 
         let currentTheme = '全部';
@@ -386,13 +309,9 @@
         const INITIAL_LOAD = 6;
         const LOAD_MORE_COUNT = 4;
 
-        // 等待 HTML 載入後綁定功能
         document.addEventListener('DOMContentLoaded', function() {
-            
-            // 頁籤切換
             const navButtons = document.querySelectorAll('.nav-btn');
             const sections = document.querySelectorAll('.page-section');
-
             navButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     navButtons.forEach(btn => btn.classList.remove('active'));
@@ -402,32 +321,21 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
             });
-
-            // 初始化渲染步道
             renderTrails();
         });
 
-        // 渲染步道卡片函式 (結合雙重篩選)
         function renderTrails() {
             const container = document.getElementById('trail-container');
             const btnLoadMore = document.getElementById('load-more-btn');
-            
-            // 根據主題與地區進行過濾
             let filteredData = trailsDatabase.filter(trail => {
                 const matchTheme = (currentTheme === '全部' || trail.type === currentTheme);
                 const matchRegion = (currentRegion === '全部' || trail.region === currentRegion);
                 return matchTheme && matchRegion;
             });
-
             container.innerHTML = '';
             const displayData = filteredData.slice(0, loadedCount || INITIAL_LOAD);
             loadedCount = displayData.length;
-
-            if (displayData.length === 0) {
-                container.innerHTML = '<p style="color: #666; font-size: 16px; padding: 20px;">目前此分類下沒有步道資料。</p>';
-            }
-
-            // 生成卡片 HTML (替換為實體 img 標籤)
+            if (displayData.length === 0) { container.innerHTML = '<p style="padding: 20px; color: #666;">無資料。</p>'; }
             displayData.forEach((trail) => {
                 const card = document.createElement('div');
                 card.className = 'card';
@@ -435,29 +343,44 @@
                     <img src="${trail.img}" alt="${trail.name}" class="card-img">
                     <div class="card-title">${trail.name}</div>
                     <div class="card-text">
-                        <strong>目前得票數：</strong> <span style="color: #d9534f; font-weight:bold;">${trail.votes}</span> 票<br>
-                        <strong>類　　型：</strong> ${trail.type}<br>
-                        <strong>難　　度：</strong> ${trail.diff}<br>
-                        <strong>適合對象：</strong> ${trail.target}<br>
-                        <strong>長　　度：</strong> ${trail.len}<br>
-                        <strong>簡　　介：</strong> ${trail.desc}
+                        <strong>得票：</strong> <span style="color: #d9534f; font-weight:bold;">${trail.votes}</span> 票<br>
+                        <strong>類型：</strong> ${trail.type}<br>
+                        <strong>難度：</strong> ${trail.diff}<br>
+                        <strong>長度：</strong> ${trail.len}<br>
+                        <strong>簡介：</strong> ${trail.desc}
                     </div>
                     <button class="btn" onclick="openModal(${trail.id})" style="width: 100%; margin-bottom: 8px; background: #ddd;">📋 查看步道資訊</button>
-                    <button class="btn" onclick="vote('${trail.name}')" style="width: 100%; font-weight: bold; background: #e3f2fd; border-color: #90caf9;">🗳️ 投給這條步道</button>
+                    <button class="btn" onclick="vote('${trail.name}')" style="width: 100%; background: #e3f2fd; font-weight: bold; border-color: #90caf9;">🗳️ 投給這條步道</button>
                 `;
                 container.appendChild(card);
             });
-
-            if (filteredData.length > loadedCount) {
-                btnLoadMore.style.display = 'inline-block';
-            } else {
-                btnLoadMore.style.display = 'none';
-            }
+            btnLoadMore.style.display = (filteredData.length > loadedCount) ? 'inline-block' : 'none';
         }
 
-        // --- 全域互動功能函式 ---
+        window.setRegionFilter = function(regionType, clickedBtn = null) {
+            // 文字按鈕連動
+            if(!clickedBtn) {
+                if(regionType === '全部') clickedBtn = document.getElementById('btn-region-all');
+                else if(regionType === '北部') clickedBtn = document.getElementById('btn-region-north');
+                else if(regionType === '中部') clickedBtn = document.getElementById('btn-region-central');
+                else if(regionType === '南部') clickedBtn = document.getElementById('btn-region-south');
+                else if(regionType === '東部') clickedBtn = document.getElementById('btn-region-east');
+            }
+            document.querySelectorAll('.region-btn').forEach(btn => btn.classList.remove('active'));
+            if(clickedBtn) clickedBtn.classList.add('active');
+            
+            // D3 地圖區塊高亮連動
+            document.querySelectorAll('.county').forEach(path => path.classList.remove('active'));
+            if(regionType !== '全部') {
+                const mapId = (regionType === '北部') ? 'north' : (regionType === '中部') ? 'central' : (regionType === '南部') ? 'south' : 'east';
+                document.querySelectorAll('.county.region-' + mapId).forEach(path => path.classList.add('active'));
+            }
+            
+            currentRegion = regionType;
+            loadedCount = INITIAL_LOAD; 
+            renderTrails();
+        };
 
-        // 主題篩選功能
         window.setThemeFilter = function(filterType, clickedBtn) {
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             clickedBtn.classList.add('active');
@@ -466,45 +389,26 @@
             renderTrails();
         };
 
-        // 地區篩選功能
-        window.setRegionFilter = function(regionType, clickedBtn) {
-            document.querySelectorAll('.region-btn').forEach(btn => btn.classList.remove('active'));
-            clickedBtn.classList.add('active');
-            currentRegion = regionType;
-            loadedCount = INITIAL_LOAD; 
-            renderTrails();
-        };
-
-        // 載入更多步道
         window.loadMoreTrails = function() {
             loadedCount += LOAD_MORE_COUNT;
             renderTrails();
         };
 
-        // 登入功能與報名表單
         let isLoggedIn = false;
         let votesRemaining = 0;
         
-        window.openRegisterModal = function() {
-            document.getElementById('register-modal').style.display = 'block';
-        };
-
+        window.openRegisterModal = function() { document.getElementById('register-modal').style.display = 'block'; };
         window.submitRegistration = function() {
             document.getElementById('register-modal').style.display = 'none';
-            isLoggedIn = true;
-            votesRemaining = 3;
+            isLoggedIn = true; votesRemaining = 3;
             document.getElementById('user-name').innerText = '王小明 (已登入)';
             document.querySelector('.votes-left').innerText = votesRemaining + ' 票';
             document.getElementById('login-btn').style.display = 'none';
             alert('報名與登入成功！感謝您提供的資訊，您今日還有 3 次投票機會。');
         };
 
-        // 投票功能
         window.vote = function(trailName) {
-            if (!isLoggedIn) {
-                alert('⚠️ 請先於右上方點擊「社群登入」後再進行投票！');
-                return;
-            }
+            if (!isLoggedIn) { alert('⚠️ 請先於右上方點擊「社群登入」後再進行投票！'); return; }
             if (votesRemaining > 0) {
                 votesRemaining--;
                 document.querySelector('.votes-left').innerText = votesRemaining + ' 票';
@@ -516,79 +420,31 @@
             }
         };
 
-        // 步道彈窗 (Modal) 控制
         window.openModal = function(trailId) {
-            const trail = trailsDatabase.find(t => t.id === trailId);
-            if(!trail) return;
-
-            // 替換彈窗圖片
-            document.getElementById('m-img').src = trail.img;
-            
-            document.getElementById('modal-title').innerText = trail.name;
-            document.getElementById('m-desc').innerText = trail.desc;
-            document.getElementById('m-city').innerText = trail.city;
-            document.getElementById('m-len').innerText = trail.len;
-            document.getElementById('m-type').innerText = trail.type;
-            document.getElementById('m-form').innerText = trail.form;
-            document.getElementById('m-alt').innerText = trail.alt;
-            document.getElementById('m-drop').innerText = trail.drop;
-            document.getElementById('m-road').innerText = trail.road;
-            document.getElementById('m-time').innerText = trail.time;
-            document.getElementById('m-diff').innerText = trail.diff;
-            document.getElementById('m-park').innerText = trail.park;
-            document.getElementById('m-mount').innerText = trail.mount;
-            document.getElementById('m-season').innerText = trail.season;
-            document.getElementById('m-permit-mt').innerText = trail.permitMt;
-            document.getElementById('m-permit-park').innerText = trail.permitPark;
-            document.getElementById('m-note').innerText = trail.note;
-
-            document.getElementById('m-drive').innerText = trail.drive;
-            document.getElementById('m-transit').innerText = trail.transit;
-            document.getElementById('m-start').innerText = trail.start;
-            document.getElementById('m-route-dest').value = trail.name;
-
-            document.getElementById('m-route').innerText = trail.route;
-            
-            document.getElementById('m-animal').innerText = trail.animal;
-            document.getElementById('m-plant').innerText = trail.plant;
-            document.getElementById('m-terrain').innerText = trail.terrain;
-
+            const t = trailsDatabase.find(trail => trail.id === trailId);
+            document.getElementById('m-img').src = t.img;
+            document.getElementById('modal-title').innerText = t.name;
+            const basic = [['簡介', t.desc], ['所在縣市', t.city], ['難度', t.diff], ['長度', t.len]];
+            const traffic = [['開車', t.drive], ['大眾運輸', t.transit]];
+            const eco = [['動物', t.animal], ['植物', t.plant]];
+            const renderTable = (id, data) => {
+                const b = document.getElementById(id); b.innerHTML = '';
+                data.forEach(r => b.innerHTML += `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`);
+            }
+            renderTable('m-basic-table', basic); renderTable('m-traffic-table', traffic); renderTable('m-eco-table', eco);
             document.querySelector('.modal-tab-btn').click();
             document.getElementById('trail-modal').style.display = 'block';
         };
 
-        window.closeModal = function(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        };
-
-        // 點擊彈窗外部區域關閉
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = "none";
-            }
-        };
-
-        window.switchModalTab = function(tabId, clickedBtn) {
-            document.querySelectorAll('.modal-tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
-            clickedBtn.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-        };
-
-        // 社群圖框選擇
-        window.setFrame = function(clickedBox) {
-            document.querySelectorAll('.frame-box').forEach(box => box.classList.remove('active'));
-            clickedBox.classList.add('active');
-        };
-
-        // 社群分享
-        window.shareSocial = function(platform) {
-            if (!isLoggedIn) {
-                alert('⚠️ 請先登入社群帳號才能發布分享！');
-                return;
-            }
-            alert(`📸 合成照片已準備完畢，正在開啟 ${platform} 分享視窗...`);
-        };
+        window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; }
+        window.switchModalTab = (tabId, btn) => {
+            document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active'); document.getElementById(tabId).classList.add('active');
+        }
+        window.onclick = (e) => { if(e.target.classList.contains('modal')) e.target.style.display='none'; }
+        window.setFrame = function(clickedBox) { document.querySelectorAll('.frame-box').forEach(box => box.classList.remove('active')); clickedBox.classList.add('active'); };
+        window.shareSocial = function(platform) { if (!isLoggedIn) { alert('⚠️ 請先登入社群帳號才能發布分享！'); return; } alert(`📸 合成照片已準備完畢，正在開啟 ${platform} 分享視窗...`); };
     </script>
 </body>
 </html>
