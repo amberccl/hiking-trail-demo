@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>115年全國登山步道票選活動 - 前台網站線稿 (V10 精美地圖版)</title>
+    <title>115年全國登山步道票選活動 - 前台網站線稿 (V11)</title>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <style>
         /* 基礎線稿樣式設定 */
@@ -27,16 +27,16 @@
         .filter-btn.active, .region-btn.active, .frame-box.active { background-color: #333; color: #fff; border-color: #333; }
         .frame-box { width: 100px; height: 100px; cursor: pointer; text-align: center; border-radius: 8px;}
 
-        /* ====== D3.js 互動地圖專屬樣式 ====== */
+        /* ====== D3.js 互動地圖專屬樣式 (依據您的設計) ====== */
         .map-container { display: flex; flex-direction: column; align-items: center; background: #eaeaea; border: 2px dashed #999; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
         
-        #taiwan-map { width: 100%; max-width: 400px; margin: 0 auto; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15)); }
+        #taiwan-map { width: 100%; max-width: 560px; margin: 0 auto; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15)); }
         #taiwan-map svg { width: 100%; height: auto; display: block; background: transparent; }
 
-        .county { stroke: #ffffff; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; cursor: pointer; transition: opacity 0.2s ease, filter 0.2s ease, stroke-width 0.2s ease, stroke 0.2s ease; }
-        .county:hover { opacity: 0.85; filter: brightness(1.05); transform: scale(1.005); transform-origin: center; }
-        /* 被選中區域的強調樣式 */
-        .county.active { stroke: #333333; stroke-width: 2.5; filter: brightness(0.95); }
+        .county { stroke: #ffffff; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; cursor: pointer; transition: opacity 0.2s ease, filter 0.2s ease, stroke-width 0.2s ease; }
+        .county:hover { opacity: 0.85; filter: brightness(1.05); }
+        /* 被點擊選中時的高亮樣式 */
+        .county.active { stroke: #333333; stroke-width: 2.8; filter: brightness(0.95); }
 
         .map-outline { fill: none; stroke: #ffffff; stroke-width: 4; stroke-linejoin: round; pointer-events: none; }
         /* ======================================= */
@@ -209,13 +209,14 @@
 
     <footer>
         <p><span class="ad-box">廣告</span>主辦單位：運動部全民運動署 | 執行單位：永悅健康股份有限公司</p>
-        <p style="font-size: 12px; color: #999;">此為 V10 線稿：導入 D3.js 與政府開放圖資 (GeoJSON) 繪製真實精美地圖並綁定連動篩選。</p>
+        <p style="font-size: 12px; color: #999;">此為 V11 線稿：採納使用者提供的精美 D3.js 地圖與配色，並自動修正舊圖資(25縣市)至現代22行政區定義。</p>
     </footer>
 
     <script>
-        // ====== D3.js 繪製地圖與邏輯 ======
+        // ====== D3.js 地圖繪製與校正邏輯 ======
         const width = 560;
         const height = 720;
+        
         const colors = {
             north: "#5f8f83",   // 北部
             central: "#83b86b", // 中部
@@ -224,17 +225,29 @@
             island: "#7fae73"   // 離島
         };
 
+        // 【更新】完整涵蓋舊地圖圖資(如桃園縣、臺北縣)對應至最新的現代國發會分區
         const regionMap = {
-            "臺北市": "north", "台北市": "north", "新北市": "north", "基隆市": "north", "桃園市": "north", "新竹市": "north", "新竹縣": "north", "宜蘭縣": "north",
-            "苗栗縣": "central", "臺中市": "central", "台中市": "central", "彰化縣": "central", "南投縣": "central", "雲林縣": "central",
-            "嘉義市": "south", "嘉義縣": "south", "臺南市": "south", "台南市": "south", "高雄市": "south", "屏東縣": "south",
+            "臺北市": "north", "台北市": "north", "新北市": "north", "臺北縣": "north", "台北縣": "north", "基隆市": "north", "桃園市": "north", "桃園縣": "north", "新竹市": "north", "新竹縣": "north", "宜蘭縣": "north",
+            "苗栗縣": "central", "臺中市": "central", "台中市": "central", "臺中縣": "central", "台中縣": "central", "彰化縣": "central", "彰化市": "central", "南投縣": "central", "雲林縣": "central",
+            "嘉義市": "south", "嘉義縣": "south", "臺南市": "south", "台南市": "south", "臺南縣": "south", "台南縣": "south", "高雄市": "south", "高雄縣": "south", "屏東縣": "south",
             "花蓮縣": "east", "臺東縣": "east", "台東縣": "east",
             "澎湖縣": "island", "金門縣": "island", "連江縣": "island"
         };
 
-        const labelMap = {
-            north: "北部", central: "中部", south: "南部", east: "東部", island: "離島"
+        // 自動轉換舊圖資名稱至最新縣市名稱，解決超過22個縣市與名稱誤植的疑慮
+        const getModernName = (name) => {
+            if (!name) return "未知";
+            const map = {
+                "臺北縣": "新北市", "台北縣": "新北市",
+                "桃園縣": "桃園市",
+                "臺中縣": "臺中市", "台中縣": "臺中市",
+                "臺南縣": "臺南市", "台南縣": "臺南市",
+                "高雄縣": "高雄市",
+            };
+            return map[name] || name;
         };
+
+        const labelMap = { north: "北部", central: "中部", south: "南部", east: "東部", island: "離島" };
 
         const svg = d3.select("#taiwan-map")
             .append("svg")
@@ -254,7 +267,7 @@
             g.selectAll("path.county")
                 .data(geoData.features)
                 .join("path")
-                // 綁定類別以便後續控制高亮
+                // 動態加入 class 以供後續點擊高亮
                 .attr("class", (d) => {
                     const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county;
                     const region = regionMap[countyName] || "island";
@@ -266,8 +279,8 @@
                     const region = regionMap[countyName] || "island";
                     return colors[region];
                 })
+                // 點擊地圖時，連動下方的文字篩選按鈕
                 .on("click", function(event, d) {
-                    // 點擊地圖區塊觸發篩選
                     const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county;
                     const regionId = regionMap[countyName] || "island";
                     const regionLabel = labelMap[regionId];
@@ -280,8 +293,9 @@
                 .append("title")
                 .text((d) => {
                     const countyName = d.properties.COUNTYNAME || d.properties.name || d.properties.NAME || d.properties.county || "縣市";
+                    const modernName = getModernName(countyName);
                     const region = regionMap[countyName] || "island";
-                    return `${countyName}｜${labelMap[region]}`;
+                    return `${modernName}｜${labelMap[region]}`;
                 });
         });
 
@@ -358,7 +372,6 @@
         }
 
         window.setRegionFilter = function(regionType, clickedBtn = null) {
-            // 文字按鈕連動
             if(!clickedBtn) {
                 if(regionType === '全部') clickedBtn = document.getElementById('btn-region-all');
                 else if(regionType === '北部') clickedBtn = document.getElementById('btn-region-north');
@@ -375,7 +388,6 @@
                 const mapId = (regionType === '北部') ? 'north' : (regionType === '中部') ? 'central' : (regionType === '南部') ? 'south' : 'east';
                 document.querySelectorAll('.county.region-' + mapId).forEach(path => path.classList.add('active'));
             }
-            
             currentRegion = regionType;
             loadedCount = INITIAL_LOAD; 
             renderTrails();
